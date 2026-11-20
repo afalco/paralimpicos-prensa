@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prensa-paralimpica"
+version = "0.1.0"
+description = "Pipeline reproducible para analizar resúmenes de prensa (clipping) sobre deporte paralímpico"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pymupdf>=1.24",
+  "pandas>=2.1",
+  "openpyxl>=3.1",
+  "matplotlib>=3.8",
+  "pillow>=10",
+  "ocrmac>=1.0; sys_platform == 'darwin'",
+]
+
+[project.optional-dependencies]
+tesseract = ["pytesseract>=0.3"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+prensa-para = "prensa_paralimpica.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["integration: requiere PDF reales (variable PRENSA_TEST_PDF)"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

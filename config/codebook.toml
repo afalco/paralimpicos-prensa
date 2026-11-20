@@ -1,0 +1,409 @@
+# Libro de códigos — Análisis de prensa sobre deporte paralímpico
+#
+# Todas las expresiones regulares se aplican sobre texto NORMALIZADO:
+#   minúsculas + sin tildes/diacríticos (ñ -> n, ü -> u, ç -> c).
+# Por eso los patrones se escriben sin tildes.
+# Se usan cadenas literales TOML ('...') para no tener que escapar las barras invertidas.
+#
+# Cambiar este fichero cambia los resultados: versionar cualquier modificación
+# (campo meta.version) y citarla en la sección de métodos.
+
+[meta]
+version = "0.1.0"
+fecha = "2026-11-20"
+descripcion = "Versión inicial derivada del piloto de enero de 2025. Pendiente de validación manual (doble codificación)."
+
+# ---------------------------------------------------------------------------
+# Relevancia: términos que indican que la pieza trata de deporte paralímpico o discapacidad.
+# Se cuentan ocurrencias (palabra completa).
+[relevancia]
+patrones = [
+  'paralimpic\w*', 'paralimpism\w*',
+  'para[- ]?(?:atletismo|natacion|ciclismo|triatlon|badminton|taekwondo|canoe|piraguismo|remo|tenis de mesa|surf|escalada|hipica|equitacion|esgrima)',
+  'discapacidad\w*', 'discapacitad\w*', 'deporte (?:adaptado|inclusivo)', 'en silla(?: de ruedas)?',
+  'cpe', 'boccia', 'goalball', 'special olympics', 'diversidad funcional',
+  'feddi', 'feddf', 'fedc', 'fedpc',
+]
+
+# ---------------------------------------------------------------------------
+# Lenguaje. Basado en las recomendaciones habituales de las guías de estilo sobre
+# discapacidad para medios (p. ej., Real Patronato sobre Discapacidad / CERMI).
+# Se cuentan ocurrencias. Ojo: incluye citas textuales de las propias personas.
+[lenguaje.desaconsejado]
+"discapacitado/a(s)" = 'discapacitad[oa]s?'
+"minusválido/minusvalía" = 'minusvali(?:d[oa]s?|a|as)\b'
+"inválido/invalidez" = 'invalid(?:o|a|os|as|ez)\b'
+"disminuido" = 'disminuid[oa]s? (?:fisic|psiquic|sensorial)\w*'
+"deficiente" = 'deficientes? (?:mental|fisic|visual)\w*'
+"retrasado/subnormal" = '(?:retrasad[oa]s? mental\w*|subnormal\w*)'
+"lisiado/tullido" = '(?:lisiad|tullid)[oa]s?'
+"sufre/padece + condición" = '(?:sufr|padec)\w* (?:de )?(?:una |la )?(?:discapacidad|paralisis|ceguera|sordera|amputacion|lesion medular|sindrome|enfermedad|espina bifida|distrofia)'
+"postrado/confinado en silla" = '(?:postrad|confinad|atad|condenad)[oa]s? (?:a|en) (?:una )?silla'
+"víctima de + condición" = 'victima de (?:una |la )?(?:discapacidad|paralisis|poliomielitis|polio|amputacion)'
+
+[lenguaje.recomendado]
+"persona(s) con discapacidad" = 'personas? con discapacidad'
+"deportista con discapacidad" = '(?:deportistas?|atletas?|nadador\w*|jugador\w*) con discapacidad'
+"usuario de silla" = 'usuari[oa]s? de silla'
+
+# ---------------------------------------------------------------------------
+# Encuadres. Se cuentan ocurrencias (palabra completa).
+# ADVERTENCIA: el diccionario deportivo incluye términos genéricos; no comparar
+# magnitudes absolutas entre ambos encuadres, sino variaciones entre grupos.
+[encuadre]
+superacion = [
+  'superacion', 'superarse', 'ejemplo de', 'inspira\w*', 'heroe\w*', 'heroina\w*',
+  'leccion(?:es)? de vida', 'valentia', 'coraje', 'a pesar de su', 'pese a su', 'luchador\w*',
+  'adversidad\w*', 'milagro\w*', 'sin limites', 'no hay limites', 'limitaciones', 'admiracion',
+  'emocionante', 'conmovedor\w*', 'fuerza de voluntad', 'nunca se rind\w*',
+]
+deportivo = [
+  'medallas?', 'oro', 'plata', 'bronce', 'records?', 'plusmarca\w*', 'marca personal', 'campeon\w*',
+  'campeonatos?', 'final(?:es)?', 'semifinal\w*', 'clasific\w*', 'entrenamient\w*', 'entrenador\w*',
+  'ranking', 'podios?', 'victoria\w*', 'derrota\w*', 'puntos', 'segundos', 'temporada', 'jornada',
+  'partido\w*', 'mundial(?:es)?', 'europeos?', 'copa', 'liga', 'titulo\w*', 'competicion\w*', 'rival\w*',
+]
+
+# ---------------------------------------------------------------------------
+# Temas (multi-etiqueta: presencia/ausencia).
+[temas]
+"Competición/resultados" = '\b(?:medalla|campeonato|copa del mundo|copa del rey|partido|final|podio|record|victoria|liga|mundial|europeo|clasific)'
+"Premios/homenajes" = '\b(?:premi|galardon|homenaj|gala\b|reconocimiento|distincion)'
+"Institucional/gestión" = '\b(?:comite paralimpico|cpe\b|presidente|federacion|asamblea|eleccion|junta directiva|ipc\b|consejo superior de deportes|csd\b)'
+"Financiación/patrocinio" = '\b(?:beca|ayudas? econ|subvencion|patrocin|plan adop|financiacion|presupuesto|convenio|sponsor)'
+"Inclusión/accesibilidad" = '\b(?:inclusi|accesib|barreras|integracion|igualdad de oportunidades)'
+"Deporte base/educación" = '\b(?:escolar|colegio|alumn|cantera|deporte base|sensibiliza|clinic|universidad|universitat)'
+"Polémica/justicia" = '\b(?:descalific|polemic|tribunal|demanda|recurso|justicia|sancion|denuncia|injusticia)'
+"Salud/rehabilitación" = '\b(?:hospital|rehabilitacion|lesion medular|paraplejic|fisioterap|salud)'
+
+# ---------------------------------------------------------------------------
+# Modalidades deportivas (presencia/ausencia).
+[deportes]
+"Natación" = 'natacion|nadador'
+"Atletismo" = 'atletismo|maraton|velocista|lanzamiento de|salto de longitud'
+"Ciclismo" = 'ciclis|handbike|tandem'
+"Triatlón" = 'triatlon|triatleta'
+"Baloncesto en silla" = 'baloncesto en silla|\bbsr\b|basquet en cadira'
+"Tenis en silla" = 'tenis en silla|tenis en cadira'
+"Tenis de mesa" = 'tenis de mesa|tennis taula'
+"Esquí/invierno" = '\besqui|snowboard'
+"Boccia" = 'boccia'
+"Goalball" = 'goalball'
+"Judo" = '\bjudo|judoka'
+"Remo/piragüismo" = '\bremo\b|piraguis|\bcanoa|kayak'
+"Fútbol adaptado" = 'futbol (?:para ciegos|5|7|sala para ciegos|amputados|adaptado)'
+"Halterofilia/powerlifting" = 'halterofilia|powerlifting|press de banca'
+"Tiro con arco" = 'tiro con arco'
+"Bádminton" = 'badminton'
+"Balonmano en silla" = 'balonmano (?:en silla|adaptado)|balonman en cadeira'
+"Vela" = '\bvela\b|regata'
+"Rugby en silla" = 'rugby en silla'
+"Hípica" = '\bhipica|equitacion'
+
+# ---------------------------------------------------------------------------
+# Tipo de discapacidad mencionado (presencia/ausencia).
+[discapacidad]
+"Física/motora" = 'silla de ruedas|lesion medular|paraplej|tetraplej|amputa|paralisis cerebral|discapacidad fisica|espina bifida|movilidad reducida'
+"Visual" = 'discapacidad visual|\bciego|ceguera|baja vision|invidente|\bguia\b|\bguias\b'
+"Intelectual" = 'discapacidad intelectual|sindrome de down|special olympics|feddi|neurodiver|autis'
+"Auditiva" = 'discapacidad auditiva|\bsord[oa]|sordera|sordolimp|lengua de signos'
+
+# ---------------------------------------------------------------------------
+# Organizaciones y patrocinadores (presencia/ausencia).
+[organizaciones]
+"CPE" = 'comite paralimpico espanol|\bcpe\b'
+"ONCE / Fundación ONCE" = '\bonce\b(?! (?:anos|meses|dias|veces|puntos|minutos|jugador|partidos|medallas|personas))'
+"Iberdrola" = 'iberdrola'
+"CaixaBank" = 'caixabank|\bla caixa\b'
+"Toyota" = 'toyota'
+"Santander" = 'banco santander'
+"Fundación ADO / Plan ADOP" = '\badop\b|fundacion ado\b'
+"CSD" = 'consejo superior de deportes|\bcsd\b'
+"IPC (Comité Paralímpico Internacional)" = 'comite paralimpico internacional|\bipc\b'
+"Ilunion" = 'ilunion'
+"Sanitas" = 'sanitas'
+"Allianz" = 'allianz'
+"Cofidis" = 'cofidis'
+"Iberia" = '\biberia\b'
+"El Corte Inglés" = 'corte ingles'
+"Telefónica/Movistar" = 'telefonica|movistar'
+
+# ---------------------------------------------------------------------------
+# Tipo de medio. Se aplica, en este orden, sobre el NOMBRE DEL MEDIO en mayúsculas.
+# Lo que no encaja en ninguno se clasifica como "Generalista/local".
+[tipo_medio]
+"Agencia" = 'EUROPA PRESS|\bEFE\b|SERVIMEDIA|AGENCIA'
+"Agregador" = 'MSN|NOTICIASDE|YAHOO|GOOGLE|FLIPBOARD|ESPANATIMES'
+"Deportivo" = 'MARCA|^AS\b|AS\.COM|MUNDO DEPORTIVO|^SPORT|RELEVO|SUPERDEPORTE|ESTADIO DEPORTIVO|DEPORTESON|5MASELDESCUENTO|ELDESMARQUE|DEPORTIV|OLIMPISMO|\bDXT\b'
+
+# Referencias gramaticales de género ("la nadadora paralímpica" / "el ciclista paralímpico"):
+# indicador complementario, independiente de la lista de personas.
+[genero_gramatical]
+roles = '(?:deportista|atleta|nadador[a]?|ciclista|tenista|jugador[a]?|esquiador[a]?|triatleta|judoka|medallista|campeon[a]?|remer[oa]|piraguista|arquer[oa]|regatista|lanzador[a]?|velocista)'
+
+# ---------------------------------------------------------------------------
+# Personas (lista curada a partir del piloto; AMPLIAR Y VALIDAR).
+# genero: "mujer" | "hombre". rol: "Deportista" | "Dirigente". Se busca como \b + patrón.
+[[personas]]
+nombre = "Teresa Perales"
+patron = 'teresa perales'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Susana Rodríguez Gacio"
+patron = 'susana rodriguez'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Loida Zabala"
+patron = 'loida zabala'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Anastasiya Dmytriv"
+patron = 'dmytriv'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Marta Arce"
+patron = 'marta arce'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Desirée Vila"
+patron = 'desiree vila'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Michelle Alonso"
+patron = 'michelle alonso'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Elena Congost"
+patron = 'congost'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Audrey Pascual"
+patron = 'audrey pascual'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Sarai Gascón"
+patron = 'sarai gascon'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Sara Andrés"
+patron = 'sara andres'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Izaskun Osés"
+patron = 'izaskun oses'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Rakel Mateo"
+patron = 'rakel mateo'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Carmen González"
+patron = 'carmen gonzalez'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Mia Carol (guía)"
+patron = 'mia carol'
+genero = "mujer"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Nil Riudavets"
+patron = 'riudavets'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Daniel Caverzaschi"
+patron = 'caverzaschi'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Sergio Garrote"
+patron = 'sergio garrote'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Damián Ramos"
+patron = 'damian ramos'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Jordi Morales"
+patron = 'jordi morales'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Álex Roca"
+patron = 'alex roca'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Adrián Parras"
+patron = 'adrian parras'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Luis Huertas"
+patron = 'luis huertas'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Dani Molina"
+patron = 'dani molina'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Diego Ballesteros"
+patron = 'diego ballesteros'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Ricardo Ten"
+patron = 'ricardo ten\b'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Alfonso Cabello"
+patron = 'alfonso cabello'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Kini Carrasco"
+patron = 'kini carrasco'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Joan Munar"
+patron = 'joan munar'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Iñigo Llopis"
+patron = 'inigo llopis'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "José Manuel Ruiz"
+patron = 'jose manuel ruiz'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Martín de la Puente"
+patron = 'martin de la puente'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Diego Parrondo"
+patron = 'diego parrondo'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Javier Conde"
+patron = 'javier conde'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Alberto Suárez Laso"
+patron = 'alberto suarez'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Quico Tur"
+patron = 'quico tur'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Quique Síscar"
+patron = 'siscar'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Enrique Alhambra"
+patron = 'enrique alhambra'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Miguel Luque"
+patron = 'miguel luque'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Roger Sans (guía)"
+patron = 'roger sans'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Javier Vergara"
+patron = 'javier vergara'
+genero = "hombre"
+rol = "Deportista"
+
+[[personas]]
+nombre = "Alberto Durán (pres. CPE)"
+patron = 'alberto duran'
+genero = "hombre"
+rol = "Dirigente"
+
+[[personas]]
+nombre = "Miguel Carballeda (ONCE)"
+patron = 'carballeda'
+genero = "hombre"
+rol = "Dirigente"
+
+[[personas]]
+nombre = "Andrew Parsons (pres. IPC)"
+patron = 'andrew parsons'
+genero = "hombre"
+rol = "Dirigente"
