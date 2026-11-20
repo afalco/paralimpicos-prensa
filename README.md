@@ -5,7 +5,7 @@ paralímpico en una **base de datos codificada** (una fila por pieza informativa
 investigación académica: visibilidad, temas, modalidades, género, lenguaje sobre discapacidad, encuadre
 de "superación" y organizaciones.
 
-> **Estado:** v0.1.0. El libro de códigos se ha construido con el piloto de enero de 2025 y **no está
+> **Estado:** v0.2.0. El libro de códigos se ha construido con el piloto de enero de 2025 y **no está
 > validado** todavía con codificación manual. Los resultados son descriptivos y provisionales.
 
 ---
@@ -27,6 +27,21 @@ PDF diarios ─► índice (enlaces internos) ─► ficha de cada pieza ─► 
 | Deduplicación | `dedup.py` | Elimina duplicados exactos (p. ej. ficheros `digital`/`impresa` del mismo día) y agrupa titulares casi idénticos en **historias** (Jaccard ≥ 0,6). |
 | Codificación | `codebook.py` + `config/codebook.toml` | Diccionarios/regex sobre texto en minúsculas y sin tildes. |
 | Informe | `report.py` | `resumen.json`, `resumen.md`, `panel.png`, `dataset.xlsx` (incluye el libro de códigos), CSV. |
+
+### Formatos del clipping admitidos
+El proveedor cambió el formato de los PDF durante 2025. El pipeline reconoce los tres formatos observados (ver `metadata.py`).
+Cada pieza guarda `formato_ficha` (A o B en online) y la fecha del resumen se lee de la **portada** de cada PDF
+(`dia_resumen_fuente = portada`), no del nombre del fichero.
+
+| Formato | Periodo | Online | TV/Radio | Índice |
+|---|---|---|---|---|
+| A | hasta el 3 mar 2025 | `@ medio`, `TMU/OTS/AMD`, `AVE: 6710 €` | `PROGRAMA: … DURACIÓN: …` | `Medio - fecha` |
+| B | desde el 4 mar 2025 | `TIPO: web`, `AVE: €54.00`, `AUDIENCIA`, `AMD`, `TMU`, `AUTOR`, `URL` | como en A | sin `@` |
+| C (Onclusive) | desde jun 2025 | como en B | `PROGRAMA : … DURACIÓN : …` (espacio antes de los dos puntos) | `Medio - By AUTOR - (ES) - [PROGRAMA] - fecha`, seguido de un extracto `<br>…` |
+
+La prensa impresa mantiene la misma ficha todo el año. **Si aparece un formato nuevo**, la tabla de calidad por mes
+(soporte, % sin AVE, calidad del texto) lo delata enseguida: hay que añadir un caso en `metadata.py` y un test en
+`tests/test_formatos_2025.py`.
 
 ## 2. Instalación
 
@@ -74,8 +89,13 @@ Sin instalar el paquete: `PYTHONPATH=src python -m prensa_paralimpica run ...`
 Opciones útiles: `--ocr {livetext,tesseract,none}` (`none` = solo metadatos, muy rápido), `--dpi 200`,
 `--force` (ignorar la caché), `--data-dir`, `--out-dir`, `--codebook ruta.toml`, `-v`.
 
-**Tiempo medido** (enero de 2025: 20 PDF, 2.084 entradas, OCR Live Text, Mac Apple Silicon): **unos 5 min 20 s**
-de extracción. La recodificación y el informe tardan unos 5 s.
+**Tiempos medidos** (OCR Live Text, Mac Apple Silicon):
+- Enero de 2025 (20 PDF, 2.084 entradas): unos 5 min 20 s.
+- Año 2025 completo (245 PDF, 23.230 entradas, 22.307 piezas tras eliminar duplicados): **unos 106 min la primera vez**.
+- Reprocesar el año tras actualizar el extractor: unos 13 min, porque se **reutiliza el OCR** ya hecho (mismo PDF, mismo motor, mismas páginas).
+- Recodificar e informe: unos 20 s.
+
+Consejo: `caffeinate -i prensa-para run ...` evita que el Mac se suspenda en ejecuciones largas.
 
 ### Salidas (`outputs/<tag>/`)
 
@@ -111,6 +131,9 @@ Reglas:
 | `soporte` | Online / Impresa / TV/Radio |
 | `tipo_medio` | Agencia / Agregador / Deportivo / Generalista/local |
 | `seccion`, `ots`, `difusion`, `ave_eur`, `area`, `tmu_min`, `duracion_s`, `hora` | Metadatos de audiencia y valor publicitario estimado del proveedor del clipping |
+| `autor`, `pais_medio`, `formato_ficha`, `audiencia`, `amd`, `url_ficha` | Campos del formato B/C (autor e indicativo de país del índice; audiencia y AMD de la ficha online) |
+| `ots_num`, `ave_eur_num` | OTS/audiencia y AVE convertidos a número (admite `6710 €`, `€54.00`, `1.470.457`) |
+| `dia_resumen_fuente` | De dónde sale `dia_resumen`: `portada` (preferente) o `nombre` del fichero |
 | `texto`, `metodo_texto`, `calidad_texto`, `n_palabras` | Texto (OCR, extracto o transcripción) y su calidad (palabras funcionales; < 0,2 = dudoso) |
 | `historia_id` | Grupo de piezas que reproducen la misma noticia |
 | `menc_para`, `para_en_titular` | Relevancia paralímpica/discapacidad |
@@ -126,8 +149,9 @@ Reglas:
 3. **Diccionarios no validados:** antes de publicar hay que hacer doble codificación manual de una muestra estratificada y calcular κ de Cohen o α de Krippendorff.
 4. **Lista de personas sesgada:** se construyó a partir de las menciones de enero. Hay que ampliarla (por ejemplo con NER) y revisarla.
 5. **AVE:** es una métrica discutida y está inflada en online. Solo se usa con fines descriptivos.
-6. **Errores de OCR:** columnas mezcladas o cortes de palabra. Afectan poco a los recuentos léxicos. Live Text no es estrictamente determinista: puede haber diferencias mínimas entre ejecuciones.
-7. **Derechos:** los PDF y los textos derivados no deben publicarse en el repositorio (`.gitignore` ya lo impide).
+6. **No independencia por sindicación:** una misma historia aparece en decenas de medios. Los contrastes deben hacerse por **historia** (`historia_id`), como hace `resumen.json` (`historias_fisher_p`), o con modelos que tengan la historia como efecto aleatorio.
+7. **Errores de OCR:** columnas mezcladas o cortes de palabra. Afectan poco a los recuentos léxicos. Live Text no es estrictamente determinista: puede haber diferencias mínimas entre ejecuciones.
+8. **Derechos:** los PDF y los textos derivados no deben publicarse en el repositorio (`.gitignore` ya lo impide).
 
 ## 7. Desarrollo
 

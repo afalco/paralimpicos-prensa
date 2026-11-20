@@ -39,7 +39,8 @@ def quality_score(text: str, min_tokens: int = 20) -> float:
 
 def clean_text(text: str) -> str:
     """Une palabras cortadas por guion de fin de línea y colapsa espacios."""
-    text = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", text or "")
+    text = _ILLEGAL_XLSX.sub(" ", text or "")  # caracteres de control (p. ej. \x00)
+    text = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", text)
     text = re.sub(r"(\w)- (\w)", r"\1\2", text)
     return re.sub(r"\s+", " ", text).strip()
 

@@ -1,8 +1,12 @@
 """Lectura del índice de cada PDF de resumen de prensa.
 
 Cada entrada del índice es un enlace interno (LINK_GOTO) a la página donde empieza
-la pieza. El texto bajo cada enlace contiene el titular (1-3 líneas) y una línea
-"Medio[ - Programa] - dd/mm/aaaa" (con prefijo "@ " en los medios online).
+la pieza. El texto bajo cada enlace contiene el titular (1-3 líneas) y una línea con el
+medio y la fecha. Variantes observadas en 2025:
+
+* ``Medio - dd/mm/aaaa`` · ``@ medio.com - dd/mm/aaaa`` · ``Cadena - PROGRAMA - dd/mm/aaaa``
+* (desde junio) ``Medio -  By AUTOR - (ES) - dd/mm/aaaa`` · ``Cadena Ser () - (ES) - PROGRAMA 00:00 - dd/mm/aaaa``,
+  seguidas de un extracto que empieza por ``<br>`` (se ignora).
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ from dataclasses import dataclass
 
 DATE_RE = re.compile(r"^(.*?) - (\d{2}/\d{2}/\d{4})\s*$")
 LINK_GOTO = 1  # == fitz.LINK_GOTO
+_COUNTRY = re.compile(r"^\(([A-Z]{2})\)$")
 
 
 @dataclass
@@ -21,18 +26,29 @@ class IndexEntry:
     fecha: str  # dd/mm/aaaa o "?"
     pagina: int  # 1-based
 
+    def _parts(self) -> list[str]:
+        return [p.strip() for p in self.linea_medio.lstrip("@ ").split(" - ")]
+
     @property
     def online(self) -> bool:
         return self.linea_medio.startswith("@")
 
     @property
     def medio(self) -> str:
-        return self.linea_medio.lstrip("@ ").split(" - ")[0].strip()
+        return re.sub(r"\s*\(\)\s*$", "", self._parts()[0]).strip()
+
+    @property
+    def autor(self) -> str | None:
+        return next((p[3:].strip() for p in self._parts()[1:] if p.startswith("By ")), None)
+
+    @property
+    def pais(self) -> str | None:
+        return next((_COUNTRY.match(p).group(1) for p in self._parts()[1:] if _COUNTRY.match(p)), None)
 
     @property
     def programa(self) -> str | None:
-        parts = [p.strip() for p in self.linea_medio.lstrip("@ ").split(" - ")]
-        return " - ".join(parts[1:]) or None
+        rest = [p for p in self._parts()[1:] if p and not p.startswith("By ") and not _COUNTRY.match(p)]
+        return " - ".join(rest) or None
 
 
 def _lines(text: str) -> list[str]:
@@ -43,10 +59,14 @@ def _lines(text: str) -> list[str]:
 
 
 def entry_from_lines(lines: list[str], page: int) -> IndexEntry:
-    """Convierte las líneas bajo un enlace en una entrada (titular + medio + fecha)."""
-    medline = next((x for x in reversed(lines) if DATE_RE.match(x)), None)
+    """Convierte las líneas bajo un enlace en una entrada (titular + medio + fecha).
+
+    El titular son las líneas anteriores a la línea 'medio - fecha'; lo posterior (extracto
+    '<br>…' del formato de junio en adelante) se descarta.
+    """
+    medline = next((x for x in lines if DATE_RE.match(x) and not x.startswith("<br>")), None)
     if medline is None:
-        return IndexEntry(" ".join(lines), "?", "?", page)
+        return IndexEntry(" ".join(x for x in lines if not x.startswith("<br>")), "?", "?", page)
     m = DATE_RE.match(medline)
     return IndexEntry(" ".join(lines[: lines.index(medline)]), m.group(1).strip(), m.group(2), page)
 

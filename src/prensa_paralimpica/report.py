@@ -98,6 +98,17 @@ def summarize(df: pd.DataFrame, cb: Codebook, min_words: int = 150) -> dict:
         "superacion_hombres": f"{c}/{c + d}",
         "fisher_p": round(fisher_exact(a, b, c, d), 4) if (a + b) and (c + d) else None,
     }
+    # Mismo contraste a nivel de HISTORIA (unidad independiente: evita inflar n con la sindicación)
+    hs = largas.groupby("historia_id").agg(sup=("hay_superacion", "max"), M=("menc_deportista_mujer", "max"),
+                                           H=("menc_deportista_hombre", "max"))
+    hm, hh = hs[hs["M"]], hs[hs["H"]]
+    a, b = int(hm["sup"].sum()), int((~hm["sup"]).sum())
+    c, d = int(hh["sup"].sum()), int((~hh["sup"]).sum())
+    S["encuadre"].update({
+        "historias_superacion_mujeres": f"{a}/{a + b}",
+        "historias_superacion_hombres": f"{c}/{c + d}",
+        "historias_fisher_p": round(fisher_exact(a, b, c, d), 4) if (a + b) and (c + d) else None,
+    })
     top = (df.groupby("historia_id")
              .agg(piezas=("titular", "size"), medios=("medio", "nunique"), titular=("titular", "first"))
              .sort_values("piezas", ascending=False).head(10))
@@ -203,7 +214,7 @@ def export_excel(df: pd.DataFrame, cb: Codebook, S: dict, path: Path) -> Path:
         for name, d in sheets.items():
             d = d.copy()
             for col in d.columns:
-                if d[col].dtype == object:
+                if d[col].dtype == object or pd.api.types.is_string_dtype(d[col]):
                     d[col] = d[col].map(xlsx_safe)
             d.to_excel(w, sheet_name=name, index=False)
     return path
@@ -249,7 +260,8 @@ Recomendado: **{L['ocurrencias_recomendado']}** ocurrencias · Desaconsejado: **
 
 ## Encuadre de superación (piezas ≥ {e['min_palabras']} palabras, n = {e['piezas_largas']})
 - % con algún término de superación, por soporte: {e['pct_superacion_por_soporte']}
-- Piezas que mencionan deportistas mujeres: {e['superacion_mujeres']} · hombres: {e['superacion_hombres']} · Fisher bilateral p = {e['fisher_p']}
+- Por pieza — mencionan deportistas mujeres: {e['superacion_mujeres']} · hombres: {e['superacion_hombres']} · Fisher bilateral p = {e['fisher_p']}
+- Por historia (unidad recomendada) — mujeres: {e['historias_superacion_mujeres']} · hombres: {e['historias_superacion_hombres']} · Fisher bilateral p = {e['historias_fisher_p']}
 
 ## Historias con más piezas (sindicación)
 | Piezas | Medios | Titular |

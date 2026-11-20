@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0 — 2026-11-20
+Ejecución del año completo de 2025: se detectaron cambios de formato del proveedor del clipping que la v0.1.0 no reconocía.
+- **Formato B (desde el 4/3/2025):** la ficha online pasa a `TIPO: web / AVE: €… / AUDIENCIA / AMD / TMU / AUTOR / URL`, sin `@` en el índice.
+  En la v0.1.0 unas 4.400 piezas online se trataban como impresas: soporte erróneo (online ≈ 40 % en lugar de ≈ 80 %), OCR innecesario y pérdida de AVE y audiencia.
+- **Formato C (Onclusive, desde junio de 2025):** TV/radio con `PROGRAMA :` / `DURACIÓN :` (espacio antes de los dos puntos), que antes no se detectaba (0 piezas de TV/radio entre junio y diciembre).
+  El índice pasa a `Medio - By AUTOR - (ES) - …` con extracto `<br>`. Ahora se separan `medio`, `autor`, `pais_medio` y `programa`.
+- `to_number` admite `€54.00`, `€2366.87`, `1.470.457` y `0,28`. Nuevas columnas `ots_num` y `ave_eur_num`.
+- La fecha del resumen se lee de la portada (corrige los ficheros mal nombrados `20280318.pdf`, `20260618.pdf`, `20260620 digital.pdf`, `224impresa.pdf`, `202506274.pdf` y `202507030.pdf`).
+- Caracteres de control (`\x00`) eliminados en la extracción y antes de exportar a Excel. Con pandas 3 las columnas de texto ya no son `object` y la limpieza no se aplicaba, lo que hacía fallar la exportación.
+- Al reprocesar por un cambio de versión del extractor **se reutiliza el OCR previo**: el año completo se reprocesa en unos 13 min en lugar de unos 106.
+- El informe añade el contraste del encuadre de superación **por historia** (unidad independiente), además de por pieza.
+- Nuevos tests: `tests/test_formatos_2025.py`, con 7 casos sobre fragmentos reales de cada formato.
+- Resultados del año 2025: 22.307 piezas, 11.457 historias y 3.207 medios; online 78 %, impresa 19 % y TV/radio 3 % (estable mes a mes); AVE disponible en el 95–100 % de las piezas cada mes.
+
+
 ## 0.1.0 — 2026-11-20
 - Primera versión del pipeline: índice por enlaces, metadatos por soporte, OCR (Live Text / Tesseract),
   caché por PDF, deduplicación e historias, libro de códigos TOML v0.1.0, informe (Excel, CSV, JSON, MD, figura),
