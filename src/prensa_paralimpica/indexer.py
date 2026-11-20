@@ -73,7 +73,7 @@ def entry_from_lines(lines: list[str], page: int) -> IndexEntry:
 
 def parse_index(doc) -> tuple[list[IndexEntry], list[int]]:
     """Devuelve (entradas, páginas_del_índice_0based) de un documento PyMuPDF."""
-    import fitz
+    import pymupdf as fitz
 
     raw_entries: list[list] = []
     idx_pages: list[int] = []

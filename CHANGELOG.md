@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1
+- `import pymupdf` en lugar del alias obsoleto `fitz` (compatible con PyMuPDF >= 1.24.3 y 2.x). Verificado con PyMuPDF 2.1: 20 tests OK, incluido el de integración con un PDF de marzo de 2025.
+
 ## 0.2.0 — 2026-11-20
 Ejecución del año completo de 2025: se detectaron cambios de formato del proveedor del clipping que la v0.1.0 no reconocía.
 - **Formato B (desde el 4/3/2025):** la ficha online pasa a `TIPO: web / AVE: €… / AUDIENCIA / AMD / TMU / AUTOR / URL`, sin `@` en el índice.

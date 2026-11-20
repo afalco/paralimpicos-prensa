@@ -99,7 +99,7 @@ def extract_pdf(path: Path, ocr=None, reuse_ocr: dict | None = None) -> list[dic
 
     ``reuse_ocr``: {(pag_ini, pag_fin): texto} de una extracción anterior con el mismo motor de OCR.
     """
-    import fitz
+    import pymupdf as fitz
 
     ocr = ocr or get_ocr("none")
     reuse_ocr = reuse_ocr or {}
